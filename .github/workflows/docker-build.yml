@@ -8,6 +8,7 @@ on:
 env:
   IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/mywebapp
   KUBE_VERSION: 1.29.0  # Match your cluster version
+  kumar: default  # Or your preferred namespace
 
 jobs:
   deploy:
@@ -48,11 +49,15 @@ jobs:
 
     - name: Deploy to Kubernetes
       run: |
-        # Update image in deployment (if using kustomize or sed)
-        kubectl set image deployment/mywebapp mywebapp=$IMAGE_NAME:$GITHUB_SHA --record
-        # Or apply all manifests
-        kubectl apply -f k8s/
+        # Create namespace if it doesn't exist
+        kubectl create namespace $kumar --dry-run=client -o yaml | kubectl apply -f -
+        
+        # Replace image placeholder in deployment
+        sed -i "s|\$IMAGE_NAME|$IMAGE_NAME:$GITHUB_SHA|g" k8s/deployment.yaml
+        
+        # Apply all manifests
+        kubectl apply -f k8s/ -n $kumar
         
         # Verify deployment
-        kubectl rollout status deployment/mywebapp
-        kubectl get pods -o wide
+        kubectl rollout status deployment/mywebapp -n $kumar
+        kubectl get pods,svc -n $kumar -o wide
