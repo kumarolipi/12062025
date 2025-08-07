@@ -3,10 +3,11 @@ name: CI/CD - Docker Build, Push & Deploy to K8s
 on:
   push:
     branches:
-      - master  # Or change to 'main' if needed
+      - master  # Or 'main' if that's your default branch
 
 env:
   IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/mywebapp
+  KUBE_VERSION: 1.29.0  # Match your cluster version
 
 jobs:
   deploy:
@@ -16,6 +17,9 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
@@ -24,15 +28,31 @@ jobs:
 
     - name: Build and push Docker image
       run: |
-        docker build -t $IMAGE_NAME:latest .
+        docker build -t $IMAGE_NAME:latest -t $IMAGE_NAME:$GITHUB_SHA .
         docker push $IMAGE_NAME:latest
+        docker push $IMAGE_NAME:$GITHUB_SHA
 
-    - name: Set up Kubeconfig
+    - name: Install kubectl
+      run: |
+        curl -LO "https://dl.k8s.io/release/v$KUBE_VERSION/bin/linux/amd64/kubectl"
+        sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+        kubectl version --client
+
+    - name: Configure Kubernetes
       run: |
         mkdir -p ~/.kube
-        echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > ~/.kube/config
+        echo "${{ secrets.KUBE_CONFIG_DATA }}" > ~/.kube/config
         chmod 600 ~/.kube/config
+        kubectl config use-context kubernetes-admin@kubernetes
+        kubectl cluster-info
 
     - name: Deploy to Kubernetes
       run: |
+        # Update image in deployment (if using kustomize or sed)
+        kubectl set image deployment/mywebapp mywebapp=$IMAGE_NAME:$GITHUB_SHA --record
+        # Or apply all manifests
         kubectl apply -f k8s/
+        
+        # Verify deployment
+        kubectl rollout status deployment/mywebapp
+        kubectl get pods -o wide
