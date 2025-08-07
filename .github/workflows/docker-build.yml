@@ -1,18 +1,22 @@
-name: Docker Build and Push
+name: CI/CD - Docker Build, Push & Deploy to K8s
 
 on:
   push:
-    branches: [ master ]
+    branches:
+      - master  # Or change to 'main' if needed
+
+env:
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/mywebapp
 
 jobs:
-  build-and-push:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Log in to DockerHub
+    - name: Log in to Docker Hub
       uses: docker/login-action@v3
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
@@ -20,14 +24,15 @@ jobs:
 
     - name: Build and push Docker image
       run: |
-        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/mywebapp:latest .
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/mywebapp:latest
+        docker build -t $IMAGE_NAME:latest .
+        docker push $IMAGE_NAME:latest
 
     - name: Set up Kubeconfig
       run: |
         mkdir -p ~/.kube
         echo "${{ secrets.KUBE_CONFIG_DATA }}" | base64 --decode > ~/.kube/config
+        chmod 600 ~/.kube/config
 
     - name: Deploy to Kubernetes
       run: |
-        sudo kubectl apply -f k8s/
+        kubectl apply -f k8s/
