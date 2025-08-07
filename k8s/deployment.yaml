@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: mywebapp
-        image: $IMAGE_NAME:latest  # Will be replaced in CI/CD
+        image: ${{ secrets.DOCKERHUB_USERNAME }}/mywebapp:$GITHUB_SHA  # Will be replaced in CI/CD
         ports:
         - containerPort: 80
         resources:

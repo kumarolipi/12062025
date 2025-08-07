@@ -46,6 +46,12 @@ jobs:
         chmod 600 ~/.kube/config
         kubectl config view
         kubectl cluster-info
+    - name: Create image pull secret
+      run: |
+        kubectl create secret generic dockerhub-creds \
+          --from-file=.dockerconfigjson=$HOME/.docker/config.json \
+          --type=kubernetes.io/dockerconfigjson \
+          --dry-run=client -o yaml | kubectl apply -f -
 
     - name: Deploy to Kubernetes
       run: |
