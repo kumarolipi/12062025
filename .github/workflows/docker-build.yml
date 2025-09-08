@@ -21,8 +21,8 @@ jobs:
 
       - name: Build and Push Docker image
         run: |
-          docker build -t lavakumar/webapp:latest .
-          docker push lavakumar/webapp:latest
+          docker build -t kumarolipi/webapp:latest .
+          docker push kumarolipi/webapp:latest
 
       - name: Setup kubeconfig
         run: |
