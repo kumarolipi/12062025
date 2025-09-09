@@ -1,3 +1,4 @@
+
 name: Deploy to Kubernetes (via Bastion)
 
 on:
@@ -24,18 +25,15 @@ jobs:
           IMAGE_NAME=${{ secrets.DOCKERHUB_USERNAME }}/my-website
           docker build -t $IMAGE_NAME:latest .
           docker push $IMAGE_NAME:latest
-
       - name: Setup SSH for bastion connection
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
           echo "${{ secrets.BASTION_SSH_KEY }}" > ~/.ssh/bastion_key
           chmod 600 ~/.ssh/bastion_key
-
       - name: Copy Kubernetes manifests to bastion
         run: |
           scp -i ~/.ssh/bastion_key -o StrictHostKeyChecking=no k8s/deployment.yaml k8s/service.yaml k8s/ingress.yaml ubuntu@${{ secrets.BASTION_HOST }}:/tmp/
-
       - name: Deploy to Kubernetes via bastion
         run: |
           ssh -i ~/.ssh/bastion_key -o StrictHostKeyChecking=no ubuntu@${{ secrets.BASTION_HOST }} << 'EOF'
@@ -46,6 +44,7 @@ jobs:
             kubectl get nodes
             
             echo "Applying Kubernetes manifests..."
+            kubectl apply -f /tmp/namespace.yaml
             kubectl apply -f /tmp/deployment.yaml
             kubectl apply -f /tmp/service.yaml
             kubectl apply -f /tmp/ingress.yaml

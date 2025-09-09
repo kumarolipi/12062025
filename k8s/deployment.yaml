@@ -1,26 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: mywebapp
+  name: my-website
+  namespace: website  # Namespace added
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
-      app: mywebapp
+      app: my-website
   template:
     metadata:
       labels:
-        app: mywebapp
+        app: my-website
     spec:
       containers:
-      - name: mywebapp
-        image: kumarolipi/mywebapp:b5ccd297e55c2d6bc982c75730464f73ee2a3151
+      - name: my-website
+        image: kumarolipi/my-website:latest
         ports:
         - containerPort: 80
-        resources:
+        resources:  # Added resource requests/limits (recommended)
           requests:
             cpu: "100m"
             memory: "128Mi"
           limits:
             cpu: "500m"
-            memory: "512Mi"
+            memory: "256Mi"
