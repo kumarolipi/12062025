@@ -32,7 +32,7 @@ jobs:
 
       - name: SSH into bastion and deploy
         run: |
-          ssh -o StrictHostKeyChecking=no -i bastion_key ubuntu@${{ secrets.BASTION_HOST }} << 'EOF'
+          ssh -o StrictHostKeyChecking=no -i github-actions-k8s ubuntu@${{ secrets.BASTION_HOST }} << 'EOF'
             echo "SSH connection successful!"
             kubectl apply -f k8s/deployment.yaml
             kubectl apply -f k8s/service.yaml
