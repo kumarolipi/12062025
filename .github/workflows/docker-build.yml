@@ -33,7 +33,7 @@ jobs:
           chmod 600 ~/.ssh/bastion_key
       - name: Copy Kubernetes manifests to bastion
         run: |
-          scp -i ~/.ssh/bastion_key -o StrictHostKeyChecking=no k8s/deployment.yaml k8s/service.yaml k8s/ingress.yaml ubuntu@${{ secrets.BASTION_HOST }}:/tmp/
+          scp -i ~/.ssh/bastion_key -o StrictHostKeyChecking=no  k8s/namespace.yaml k8s/deployment.yaml k8s/service.yaml k8s/ingress.yaml ubuntu@${{ secrets.BASTION_HOST }}:/tmp/
       - name: Deploy to Kubernetes via bastion
         run: |
           ssh -i ~/.ssh/bastion_key -o StrictHostKeyChecking=no ubuntu@${{ secrets.BASTION_HOST }} << 'EOF'
