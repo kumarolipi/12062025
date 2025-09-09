@@ -56,3 +56,50 @@ jobs:
             rm -f /tmp/deployment.yaml /tmp/service.yaml /tmp/ingress.yaml /tmp/namespace.yaml
             echo "✅ Deployment completed successfully!"
           EOF
+      - name: Verify Deployment and Check Namespace Content
+        run: |
+          ssh -i ~/.ssh/bastion_key -o StrictHostKeyChecking=no ubuntu@${{ secrets.BASTION_HOST }} << 'EOF'
+          
+          echo "=== DEPLOYMENT VERIFICATION ==="
+          
+          echo "1. Checking all resources in website namespace:"
+          kubectl get all -n website
+          
+          echo ""
+          echo "2. Detailed pod information:"
+          kubectl get pods -n website -o wide
+          
+          echo ""
+          echo "3. Service details:"
+          kubectl describe service my-website-service -n website
+          
+          echo ""
+          echo "4. Ingress details:"
+          kubectl get ingress -n website
+          kubectl describe ingress my-website-ingress -n website
+          
+          echo ""
+          echo "5. Deployment status:"
+          kubectl describe deployment my-website -n website
+          
+          echo ""
+          echo "6. Pod logs (first pod):"
+          POD_NAME=$(kubectl get pods -n website -l app=my-website -o jsonpath='{.items[0].metadata.name}')
+          kubectl logs -n website $POD_NAME
+          
+          echo ""
+          echo "7. Service endpoints:"
+          kubectl get endpoints -n website
+          
+          echo ""
+          echo "8. Events in website namespace:"
+          kubectl get events -n website --sort-by=.lastTimestamp
+          
+          echo ""
+          echo "9. Resource utilization:"
+          kubectl top pods -n website
+          
+          echo ""
+          echo "=== VERIFICATION COMPLETE ==="
+          
+          EOF
