@@ -25,16 +25,16 @@ jobs:
           docker build -t $IMAGE_NAME:latest .
           docker push $IMAGE_NAME:latest
 
-      - name: Create SSH Key
+      - name: Create SSH private key file
         run: |
           echo "${{ secrets.BASTION_SSH_KEY }}" > bastion_key
           chmod 600 bastion_key
 
-      - name: Deploy to Kubernetes via Bastion Host
+      - name: SSH to bastion and deploy to Kubernetes
         run: |
           ssh -o StrictHostKeyChecking=no -i bastion_key ubuntu@${{ secrets.BASTION_HOST }} << 'EOF'
-            cd ~/my-k8s-folder  # Or wherever your manifests are on the bastion
-            kubectl apply -f deployment.yaml
-            kubectl apply -f service.yaml
-            kubectl apply -f ingress.yaml
+            echo "SSH connection successful!"
+            kubectl apply -f k8s/deployment.yaml
+            kubectl apply -f k8s/service.yaml
+            kubectl apply -f k8s/ingress.yaml
           EOF
