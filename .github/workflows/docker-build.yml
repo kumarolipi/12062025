@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted  # Changed from ubuntu-latest to self-hosted
 
     steps:
       - name: Checkout code
@@ -25,16 +25,41 @@ jobs:
           docker build -t $IMAGE_NAME:latest .
           docker push $IMAGE_NAME:latest
 
-      - name: Create SSH private key file
+      - name: Setup SSH for bastion connection
         run: |
-          echo "${{ secrets.BASTION_SSH_KEY }}" > bastion_key
-          chmod 600 bastion_key
+          # Create .ssh directory with proper permissions
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          # Save the SSH key from secrets
+          echo "${{ secrets.BASTION_SSH_KEY }}" > ~/.ssh/bastion_key
+          chmod 600 ~/.ssh/bastion_key
 
-      - name: SSH into bastion and deploy
+      - name: Test SSH connection to bastion
         run: |
-          ssh -o StrictHostKeyChecking=no -i github-actions-k8s ubuntu@${{ secrets.BASTION_HOST }} << 'EOF'
+          ssh -i ~/.ssh/bastion_key -o StrictHostKeyChecking=no -o BatchMode=yes ubuntu@${{ secrets.BASTION_HOST }} "echo 'SSH test successful!'"
+
+      - name: Copy Kubernetes manifests to bastion
+        run: |
+          scp -i ~/.ssh/bastion_key -o StrictHostKeyChecking=no k8s/deployment.yaml k8s/service.yaml k8s/ingress.yaml ubuntu@${{ secrets.BASTION_HOST }}:/tmp/
+
+      - name: Deploy to Kubernetes via bastion
+        run: |
+          ssh -i ~/.ssh/bastion_key -o StrictHostKeyChecking=no ubuntu@${{ secrets.BASTION_HOST }} << 'EOF'
+            set -e  # Exit on error
+            
             echo "SSH connection successful!"
-            kubectl apply -f k8s/deployment.yaml
-            kubectl apply -f k8s/service.yaml
-            kubectl apply -f k8s/ingress.yaml
+            echo "Applying Kubernetes manifests..."
+            
+            # Apply all manifests
+            kubectl apply -f /tmp/deployment.yaml
+            kubectl apply -f /tmp/service.yaml
+            kubectl apply -f /tmp/ingress.yaml
+            
+            # Verify deployment
+            echo "Checking rollout status..."
+            kubectl rollout status deployment/$(kubectl get deployment -o name | head -n1 | cut -d'/' -f2) --timeout=120s
+            
+            # Clean up temporary files
+            rm -f /tmp/deployment.yaml /tmp/service.yaml /tmp/ingress.yaml
+            echo "Deployment completed successfully!"
           EOF
