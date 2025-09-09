@@ -1,11 +1,12 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: webapp-ingress
+  name: my-website-ingress
+  namespace: webapp
   annotations:
-    kubernetes.io/ingress.class: "nginx"
-    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
+  ingressClassName: nginx
   rules:
   - host: www.lavakumar.xyz
     http:
@@ -14,10 +15,6 @@ spec:
         pathType: Prefix
         backend:
           service:
-            name: webapp-service
+            name: my-website-service
             port:
               number: 80
-  tls:
-  - hosts:
-    - www.lavakumar.xyz
-    secretName: webapp-tls
