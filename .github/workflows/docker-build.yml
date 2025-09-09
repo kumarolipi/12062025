@@ -53,6 +53,6 @@ jobs:
             kubectl rollout status deployment/$(kubectl get deployment -o name | head -n1 | cut -d'/' -f2) --timeout=120s
             
             # Clean up temporary files
-            rm -f /tmp/deployment.yaml /tmp/service.yaml /tmp/ingress.yaml
+            rm -f /tmp/deployment.yaml /tmp/service.yaml /tmp/ingress.yaml /tmp/namespace.yaml
             echo "✅ Deployment completed successfully!"
           EOF
