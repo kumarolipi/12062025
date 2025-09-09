@@ -1,9 +1,9 @@
-name: Deploy to Kubernetes
+name: Deploy to Kubernetes (via Bastion)
 
 on:
   push:
     branches:
-      - master   # deploy on every push to master
+      - master
 
 jobs:
   build-and-deploy:
@@ -25,18 +25,16 @@ jobs:
           docker build -t $IMAGE_NAME:latest .
           docker push $IMAGE_NAME:latest
 
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'v1.28.0'
-
-      - name: Configure Kubeconfig
+      - name: Create SSH Key
         run: |
-          mkdir -p ~/.kube
-          echo "${{ secrets.KUBE_CONFIG_DATA }}" > ~/.kube/config
+          echo "${{ secrets.BASTION_SSH_KEY }}" > bastion_key
+          chmod 600 bastion_key
 
-      - name: Deploy to Kubernetes
+      - name: Deploy to Kubernetes via Bastion Host
         run: |
-          kubectl apply -f k8s/deployment.yaml
-          kubectl apply -f k8s/service.yaml
-          kubectl apply -f k8s/ingress.yaml
+          ssh -o StrictHostKeyChecking=no -i bastion_key ubuntu@${{ secrets.BASTION_HOST }} << 'EOF'
+            cd ~/my-k8s-folder  # Or wherever your manifests are on the bastion
+            kubectl apply -f deployment.yaml
+            kubectl apply -f service.yaml
+            kubectl apply -f ingress.yaml
+          EOF
