@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: website
+  labels:
+    name: website
+    environment: production
+    app: my-website
