@@ -6,7 +6,7 @@ on:
       - master
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -30,7 +30,7 @@ jobs:
           echo "${{ secrets.BASTION_SSH_KEY }}" > bastion_key
           chmod 600 bastion_key
 
-      - name: SSH to bastion and deploy to Kubernetes
+      - name: SSH into bastion and deploy
         run: |
           ssh -o StrictHostKeyChecking=no -i bastion_key ubuntu@${{ secrets.BASTION_HOST }} << 'EOF'
             echo "SSH connection successful!"
