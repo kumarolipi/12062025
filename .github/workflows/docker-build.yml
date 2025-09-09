@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    runs-on: self-hosted  # Changed from ubuntu-latest to self-hosted
+    runs-on: self-hosted
 
     steps:
       - name: Checkout code
@@ -27,16 +27,10 @@ jobs:
 
       - name: Setup SSH for bastion connection
         run: |
-          # Create .ssh directory with proper permissions
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          # Save the SSH key from secrets
           echo "${{ secrets.BASTION_SSH_KEY }}" > ~/.ssh/bastion_key
           chmod 600 ~/.ssh/bastion_key
-
-      - name: Test SSH connection to bastion
-        run: |
-          ssh -i ~/.ssh/bastion_key -o StrictHostKeyChecking=no -o BatchMode=yes ubuntu@${{ secrets.BASTION_HOST }} "echo 'SSH test successful!'"
 
       - name: Copy Kubernetes manifests to bastion
         run: |
@@ -45,21 +39,21 @@ jobs:
       - name: Deploy to Kubernetes via bastion
         run: |
           ssh -i ~/.ssh/bastion_key -o StrictHostKeyChecking=no ubuntu@${{ secrets.BASTION_HOST }} << 'EOF'
-            set -e  # Exit on error
+            set -e
             
             echo "SSH connection successful!"
-            echo "Applying Kubernetes manifests..."
+            echo "Kubernetes cluster status:"
+            kubectl get nodes
             
-            # Apply all manifests
+            echo "Applying Kubernetes manifests..."
             kubectl apply -f /tmp/deployment.yaml
             kubectl apply -f /tmp/service.yaml
             kubectl apply -f /tmp/ingress.yaml
             
-            # Verify deployment
-            echo "Checking rollout status..."
+            echo "Checking deployment status..."
             kubectl rollout status deployment/$(kubectl get deployment -o name | head -n1 | cut -d'/' -f2) --timeout=120s
             
             # Clean up temporary files
             rm -f /tmp/deployment.yaml /tmp/service.yaml /tmp/ingress.yaml
-            echo "Deployment completed successfully!"
+            echo "✅ Deployment completed successfully!"
           EOF
